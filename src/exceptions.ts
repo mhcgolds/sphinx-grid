@@ -1,7 +1,19 @@
-export function throwException(exceptionConst: string, exceptionData: object): void {
-    const errorMessage = new Function('data', 'errorMessage', "return `${errorMessage}`;");
-    throw new Error(errorMessage(exceptionData, errorMessage));
+import { type ExceptionType } from "./types";
+
+const errorPrefix: string = "Sphinx Grid Error: ";
+
+export class Exceptions {
+    public static throw(exception: ExceptionType, exceptionData?: object): void {
+        if (exceptionData === null) exceptionData = {};
+
+        const errorMessage = new Function('data', 'exception', "return `(${exception.code}) - ` + `${exception.message}`;");
+        const finalErrorMessage = errorMessage(exceptionData, exception);
+        throw new Error(errorPrefix + finalErrorMessage);
+    };
 };
 
 // User exceptions
-export const USR_INV_PROP = "`Invalid property \"${data.propertyName}\" for object \"${data.objectName}\"`";
+export const USR_INV_PROP:ExceptionType = {
+    code: "USR_INV_PROP",
+    message: "Invalid property \"${data.propertyName}\" for object \"${data.objectName}\""
+};

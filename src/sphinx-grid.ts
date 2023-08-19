@@ -1,29 +1,35 @@
-import { type GridColumn, type GridFilter,  type GridDataItem } from './types';
 import { 
-    throwException, 
-    USR_INV_PROP 
+    type GridData, 
+    type GridColumn, 
+    type GridFilter, 
+    type GridDataItem,
+    type GridRemoteData,
+    type GridRemoteDataItem 
+} from './types';
+
+import { 
+    Exceptions, 
+    USR_INV_PROP
 } from './exceptions';
 
-export class SphinxGrid {
+import DOM from './dom';
+
+export default class SphinxGrid {
     private target: any;
-    private url: string | null;
     private filters: GridFilter[];
     private columns: GridColumn[];
   
-    private data: GridDataItem[];
+    private data: GridData[];
     private isLayoutBuilt: boolean;
+
+    private dom: DOM;
   
-    constructor() {
-        this.url = null;
+    constructor(document: any) {
         this.data = [];
         this.filters = [];
         this.columns = [];
         this.isLayoutBuilt = false;
-    }
-  
-    public setUrl(url: string): this {        
-        this.url = url;
-        return this;
+        this.dom = new DOM(document);
     }
   
     public setTarget(target: any): this {
@@ -47,70 +53,74 @@ export class SphinxGrid {
   
     public getColumn(field: string): GridColumn | null {
         const column = this.columns.find(column => column.field === field);
-    
-        if (column) {
+        
+        if (column) { 
             return column;
         }
-    
+
         return null;
     }
   
     public getFilter(field: string): GridFilter | null {
         const filter = this.filters.find(filter => filter.field === field);
-    
-        if (filter) {
+        
+        if (filter) { 
             return filter;
         }
-    
+
         return null;
     }
   
-    public fetchUrl(): this {
-        if (this.url === null) throw "Url not defined.";
-    
-        this.buildLayout();
-    
-        // TODO: Open ajax request to the given url. Set data to this.data as GridDataItem and call fillGrid()
-    
-        return this;
-    }
-  
-    public getData(): GridDataItem[] {
+    public getData(): GridData[] {
         return this.data;
     }
   
-    private buildLayout(): void {
+    public buildLayout(): void {
         if (this.isLayoutBuilt) return;
     
-        // TODO: Build the grid's HTML 
+        const table = this.dom.table()
+            .attr('class', 'sphinx-grid');
+
+        this.columns.forEach(column => {
+            table.th(column);
+        });
+
+        this.dom.renderTo(this.target);
+        this.isLayoutBuilt = true;
     }
 
-    public addDataItemJson(dataItem: any): this {
-        if (!dataItem.field) throwException(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'field' });
-        if (!dataItem.value) throwException(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'field' });
+    public addDataItemJson(dataItems: GridRemoteDataItem[]): this {
+        let newData:GridData = { items: [] };
 
-        const column = this.getColumn(dataItem.field);
+        dataItems.forEach(entry => {
+            if (!entry.field) Exceptions.throw(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'field' });
+            if (!entry.value) Exceptions.throw(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'value' });
 
-        this.data.push({
-            field: dataItem.field,
-            value: dataItem.value,
-            column: column
-        } as GridDataItem);
+            const column = this.getColumn(entry.field);
+
+            newData.items.push({
+                field: entry.field,
+                value: entry.value,
+                column: column
+            } as GridDataItem);
+        });
+            
+        this.data?.push(newData);
 
         return this;
     }
-  
-    private fillGrid(requestData: any[]): void {
-        this.clearGrid();
-        requestData.forEach(item => {
-            this.addDataItemJson(item);  
-            // Render TD according to 'column'
+
+    public refresh(): this {
+        this.dom.clearBody();
+        
+        this.getData().forEach((item, index) => {
+            const tr = this.dom.tr().attr('class', (index % 2 == 0 ? 'even-row' : 'odd-row'));
+                
+            item.items.forEach(cell => {
+                tr.td(cell);
+            });
         });
-    }
-  
-    private clearGrid(): void {
-        this.data = [];
-    
-        // TODO: Clears all grid rows
+
+        return this;
     }
   };

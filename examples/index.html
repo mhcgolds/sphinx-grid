@@ -10,9 +10,30 @@
 
         <script type="module" src="/dist/sphinx-grid.js"></script>
         <script type="module">
-            import SphinxGrid from '/dist/sphinx-grid.js'
-            console.log('module init');
+            import SphinxGrid from '/dist/sphinx-grid.js';
+
+            const grid = new SphinxGrid(document);
+            grid
+                .setTarget('#grid')
+                .addColumn({
+                    field: 'id',
+                    title: 'Id',
+                    width: 100,
+                    align: 'right'
+                })
+                .addColumn({
+                    field: 'name',
+                    title: 'Name'
+                })
+                .buildLayout();
+
+            // Fetch data
+            const response = await fetch('/examples/data.json');
+            const data = await response.json();
+
             debugger;
+            data.forEach(item => grid.addDataItemJson(item));
+            grid.refresh();
         </script>
     </body>
 </html>

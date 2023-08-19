@@ -1,0 +1,15 @@
+[
+    [{
+        "field": "id",
+        "value": 1
+    },{
+        "field": "name",
+        "value": "Jhon Doe"
+    }], [{
+        "field": "id",
+        "value": 2
+    },{
+        "field": "name",
+        "value": "Jane Doe",
+        "template": "<strong>${value}</strong>"
+    }]]

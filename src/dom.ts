@@ -1,4 +1,4 @@
-import { type GridColumn, type GridDataItem } from "./types";
+import { IDictionary, type GridColumn, type GridDataItem } from "./types";
 
 export default class DOM {
     private document: any;
@@ -52,7 +52,7 @@ export default class DOM {
         if (!this._table) throw Error('Create a TABLE in order to add a TH');
 
         const th = this.createEl('th');
-        th.innerText = gridColumn.title;
+        th.innerText = gridColumn.title ?? '';
         th.setAttribute('scope', 'col');
 
         const col = this.createEl('col');
@@ -63,6 +63,14 @@ export default class DOM {
 
         if (gridColumn.align) {
             col.setAttribute('align', gridColumn.align);
+        }
+
+        if (gridColumn.thAttributes) {
+            const attributes: IDictionary<string | number> = gridColumn.thAttributes;
+
+            Object.keys(attributes).forEach(key => {
+                th.setAttribute(key, attributes[key]);
+            });
         }
 
         this._colgroup.appendChild(col);
@@ -80,7 +88,26 @@ export default class DOM {
         if (this._currentEl.tagName !== 'TR') throw Error('TD should be created after TR');
 
         const td = this.createEl('td');
-        td.innerHTML = dataItem.value;
+        td.setAttribute('scope', 'col');
+
+        if (dataItem.template) {
+            td.innerHTML = this.renderTemplate(dataItem.template, dataItem.dataItem);
+        }
+        else if (dataItem.column.template) {
+            td.innerHTML = this.renderTemplate(dataItem.column.template, dataItem.dataItem);
+        }
+        else {
+            td.innerHTML = dataItem.value;
+        }
+
+        if (dataItem.column.tdAttributes) {
+            const attributes: IDictionary<string | number> = dataItem.column.tdAttributes;
+
+            Object.keys(attributes).forEach(key => {
+                td.setAttribute(key, attributes[key]);
+            });
+        }
+
         this._currentEl.appendChild(td);
         return this;
     }
@@ -88,5 +115,10 @@ export default class DOM {
     public clearBody(): this {
         this._tbody.innerHTML = '';
         return this;
+    }
+
+    private renderTemplate(template: string, dataItem: object): string {
+        const templateFn = new Function('data', `return ${template}`);
+        return templateFn(dataItem);
     }
 };

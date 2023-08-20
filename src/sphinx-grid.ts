@@ -3,8 +3,8 @@ import {
     type GridColumn, 
     type GridFilter, 
     type GridDataItem,
-    type GridRemoteData,
-    type GridRemoteDataItem 
+    type GridRemoteDataItem,
+    type IDictionary
 } from './types';
 
 import { 
@@ -38,9 +38,7 @@ export default class SphinxGrid {
     }
   
     public addColumn(gridColumn: GridColumn): this {
-        if (this.getColumn(gridColumn.field) === null) {
-            this.columns.push(gridColumn);
-        }
+        this.columns.push(gridColumn);
         return this;
     }
   
@@ -71,8 +69,12 @@ export default class SphinxGrid {
         return null;
     }
   
-    public getData(): GridData[] {
-        return this.data;
+    public getData(applyFilters?: boolean): GridData[] {
+        if (!applyFilters) {
+            return this.data;
+        }
+
+        return this.applyFilters(this.data);
     }
   
     public buildLayout(): void {
@@ -89,19 +91,19 @@ export default class SphinxGrid {
         this.isLayoutBuilt = true;
     }
 
-    public addDataItemJson(dataItems: GridRemoteDataItem[]): this {
+    public addDataItemJson(dataItem: IDictionary<any>): this {
         let newData:GridData = { items: [] };
 
-        dataItems.forEach(entry => {
-            if (!entry.field) Exceptions.throw(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'field' });
-            if (!entry.value) Exceptions.throw(USR_INV_PROP, { objectName: 'dataItem', propertyName: 'value' });
-
-            const column = this.getColumn(entry.field);
+        this.columns.forEach(column => {
+            const value: any = (column.field && dataItem[column.field] ? dataItem[column.field] : null);
+            const template: any = (column.field && dataItem[`_template-${column.field}`] ? dataItem[`_template-${column.field}`] : null);
 
             newData.items.push({
-                field: entry.field,
-                value: entry.value,
-                column: column
+                field: column.field,
+                value: value,
+                template: template,
+                column: column,
+                dataItem: dataItem
             } as GridDataItem);
         });
             
@@ -110,11 +112,11 @@ export default class SphinxGrid {
         return this;
     }
 
-    public refresh(): this {
+    public refresh(applyFilters?: boolean): this {
         this.dom.clearBody();
         
-        this.getData().forEach((item, index) => {
-            const tr = this.dom.tr().attr('class', (index % 2 == 0 ? 'even-row' : 'odd-row'));
+        this.getData(applyFilters).forEach((item, index) => {
+            const tr = this.dom.tr().attr('class', (index % 2 == 0 ? 'row-even' : 'row-odd'));
                 
             item.items.forEach(cell => {
                 tr.td(cell);
@@ -123,4 +125,32 @@ export default class SphinxGrid {
 
         return this;
     }
-  };
+
+    public clearFilters(): this {
+        this.filters = [];
+        return this;
+    }
+
+    public applyFilters(data: GridData[]): GridData[] {
+        if (!this.filters.length) return this.data;
+
+        return data.filter(item => {
+            const dataItem = item.items[0].dataItem as IDictionary<any>;
+
+            for (let i = 0; i < this.filters.length; i++) {
+                const filter = this.filters[i];
+                const operator = filter.operator ?? 'equals';
+                const value = dataItem[filter.field];
+
+                if (operator === 'equals' && value != filter.value) return false;
+                else if (operator === 'different' && !(value != filter.value)) return false;
+                else if (operator === 'greater' && !(value > filter.value)) return false;
+                else if (operator === 'greater_equals' && !(value >= filter.value)) return false;
+                else if (operator === 'lower' && !(value < filter.value)) return false;
+                else if (operator === 'lower_equals' && !(value <= filter.value)) return false;
+            }
+
+            return true;
+        });
+    }
+};

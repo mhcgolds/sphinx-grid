@@ -6,6 +6,21 @@
     <body>
         <h2>SphinxGrid example #1</h2>
 
+        <div>
+            Filter age: <input type="number" id="age" style="width: 50px"> - <select id="operator">
+                <option value="equals">Equals</option>
+                <option value="greater">Greater than</option>
+                <option value="greater_equals">Greater than or equals</option>
+                <option value="lower">Lower than</option>
+                <option value="lower_equals">Lower than or equals</option>
+                <option value="different">Different than</option>
+            </select>
+            <button type="button" id="filter-apply">Apply Filters</button>
+            <button type="button" id="filter-clear">Clear filters</button>
+        </div>
+
+        <hr />
+
         <div id="grid"></div>
 
         <script type="module" src="/dist/sphinx-grid.js"></script>
@@ -25,15 +40,52 @@
                     field: 'name',
                     title: 'Name'
                 })
+                .addColumn({
+                    field: 'age',
+                    title: 'Age',
+                    align: 'center',
+                    width: 100,
+                    template: "(data.age > 30 ? `<strong>${data.age}</strong>` : data.age)"
+                })
+                .addColumn({
+                    title: 'Actions',
+                    width: 100,
+                    align: "center",
+                    template: "`<a href='edit?id=${data.id}'>Edit</a>`",
+                    thAttributes: {
+                        colspan: 2
+                    }
+                })
+                .addColumn({
+                    align: "center",
+                    template: "`<a href='delete?id=${data.id}'>Delete</a>`",
+                })
                 .buildLayout();
 
             // Fetch data
             const response = await fetch('/examples/data.json');
             const data = await response.json();
 
-            debugger;
             data.forEach(item => grid.addDataItemJson(item));
             grid.refresh();
+
+            document.querySelector('#filter-apply').addEventListener('click', () => {
+                const value = document.querySelector('#age').value,
+                    operator = document.querySelector('#operator').value;
+
+                grid
+                    .clearFilters()
+                    .addFilter({
+                        field: 'age',
+                        operator: operator,
+                        value: value
+                    })
+                    .refresh(true);
+            });
+            
+            document.querySelector('#filter-clear').addEventListener('click', () => {
+                grid.clearFilters().refresh();
+            });
         </script>
     </body>
 </html>

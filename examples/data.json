@@ -1,15 +1,18 @@
-[
-    [{
-        "field": "id",
-        "value": 1
-    },{
-        "field": "name",
-        "value": "Jhon Doe"
-    }], [{
-        "field": "id",
-        "value": 2
-    },{
-        "field": "name",
-        "value": "Jane Doe",
-        "template": "<strong>${value}</strong>"
-    }]]
+[{
+    "id": 1,
+    "name": "John Doe",
+    "age": 32
+}, {
+    "id": 2,
+    "name": "Jane Doe",
+    "age": 29,
+    "_template-name": "`<em>${data.name}</em>`"
+}, {
+    "id": 3,
+    "name": "Jules Verne",
+    "age": 77
+}, {
+    "id": 4,
+    "name": "Arthur Conan Doyle",
+    "age": 71
+}]
